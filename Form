@@ -1,0 +1,151 @@
+package LAB11;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.util.Scanner;
+
+class gui extends JFrame implements ActionListener {
+    private JLabel label1;
+    private JLabel label2;
+    private JTextField text1;
+    private JPasswordField pass;
+    private JButton button;
+    
+    private static final String DB_DRIVER = "com.mysql.cj.jdbc.Driver";
+    private static final String URL = "jdbc:mysql://localhost:3306/login";
+    private static final String USER = "root";
+    private static final String PASS = "palak";
+    
+    public gui() {
+        setLayout(null);
+        setTitle("Login page");
+        setSize(400, 400);
+        
+        label1 = new JLabel("Name");
+        label2 = new JLabel("Password");
+        
+        label1.setBounds(50, 50, 100, 30);
+        label2.setBounds(50, 100, 100, 30);
+        
+        add(label1);
+        add(label2);
+        
+        text1 = new JTextField();
+        pass = new JPasswordField();
+        
+        text1.setBounds(150, 50, 100, 30);
+        pass.setBounds(150, 100, 100, 30);
+        
+        add(text1);
+        add(pass);
+        
+        button = new JButton("Click here");
+        button.setBounds(150, 200, 100, 30);
+        add(button);
+        
+        button.addActionListener(this);
+        
+        createtable();
+        insertRecords("PALAK", "1234");
+        insertRecords("PRIYAL", "4321");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+        
+        setVisible(true);
+    }
+    
+    public void actionPerformed(ActionEvent e) {
+        String username = text1.getText();
+        String code = new String(pass.getPassword());
+        
+        try {
+            Class.forName(DB_DRIVER);
+        } catch (ClassNotFoundException ex) {
+            System.out.println("Class not found: " + ex.getMessage());
+        }
+        
+        try {
+            Connection con = DriverManager.getConnection(URL, USER, PASS);
+            PreparedStatement prest = con.prepareStatement("SELECT * FROM info WHERE Name=? AND Password=?");
+            prest.setString(1, username);
+            prest.setString(2, code);
+            
+            ResultSet rs = prest.executeQuery();
+            
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(this, "LOGIN SUCCESSFUL", "YAY", JOptionPane.INFORMATION_MESSAGE);
+                new WelcomeWindow(username);  // Open welcome window on successful login
+                this.dispose();  // Close the login window
+            } else {
+                JOptionPane.showMessageDialog(this, "LOGIN FAILED BUT USER REG.", "ONO", JOptionPane.ERROR_MESSAGE);
+                insertRecords(username, code);
+                new WelcomeWindow(username);
+                this.dispose();
+            }
+        } catch (SQLException e1) {
+            System.out.println("SQL Error: " + e1.getMessage());
+        }
+    }
+    
+    public static void createtable() {
+        try {
+            Class.forName(DB_DRIVER);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Class not found: " + e.getMessage());
+        }
+        
+        try {
+            Connection con = DriverManager.getConnection(URL, USER, PASS);
+            Statement st = con.createStatement();
+            String query1 = "CREATE TABLE IF NOT EXISTS info(" +
+                            "Name VARCHAR(20) NOT NULL," +
+                            "Password VARCHAR(20) NOT NULL)";
+            st.executeUpdate(query1);
+            System.out.println("Table created Successfully");
+            st.close();
+        } catch (SQLException e) {
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
+    }
+    
+    public static void insertRecords(String username, String code) {
+        try {
+            Class.forName(DB_DRIVER);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Class not found: " + e.getMessage());
+        }
+        try {
+            Connection con = DriverManager.getConnection(URL, USER, PASS);
+            PreparedStatement prest = con.prepareStatement("INSERT into info VALUES(?, ?)");
+            prest.setString(1, username);
+            prest.setString(2, code);
+            
+            prest.executeUpdate();
+            System.out.println("Record inserted successfully");
+        } catch (SQLException e) {
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
+    }
+}
+
+// Welcome Window class that will be shown after a succedessful login
+class WelcomeWindow extends JFrame {
+    public WelcomeWindow(String username) {
+        setTitle("Welcome");
+        setSize(300, 200);
+        
+        JLabel welcomeLabel = new JLabel("Welcome, " + username, SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        
+        add(welcomeLabel);
+        
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+}
+
+public class example1 {
+    public static void main(String args[]) {
+        new gui();
+    }
+}
